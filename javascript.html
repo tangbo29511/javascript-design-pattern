@@ -154,7 +154,8 @@
 
 /*************************************************设计模式************************************************/
 		
-									/******** 1.工厂模式 *********/
+	/******** 1.工厂模式 *********/
+
 		/* BicycleShop class. */
 		/*var BicycleShop = function(){};
 		BicycleShop.prototype = {
@@ -249,11 +250,162 @@
 		}
 
 		/* AcmeBicycleShop class.*/
-
 		var AcmeBicycleShop = function(){};
 		extend(AcmeBicycleShop, BicycleShop);
-		
+		AcmeBicycleShop.prototype.createBicycle = function(model){
+			var bicycle;
+			switch(model){
+				case 'The Speedster':
+					bicycle = new AcmeSpeedster();
+					break;
+				case 'The Lowrider':
+					bicycle = new AcmeLowrider();
+					break;
+				case 'The Flatlander':
+					bicycle = new AcmeFlatlander();
+					break;
+				case 'The Comfort Cruiser':
+				default:
+					bicycle = new AcmeComfortCruiser();
+			}
+			Interface.ensureImplements(bicycle, Bicycle);
+			return bicycle;	
+		}
 
+		/* GeneralProductsBicycleShop class.*/
+		var GeneralProductsBicycleShop = function(){};
+		extend(GeneralProductsBicycleShop, BicycleShop);
+		GeneralProductsBicycleShop.prototype.createBicycle = function(model){
+			var bicycle;
+			switch(model){
+				case 'The Speedster':
+					bicycle = new GeneralProductsSpeedster();
+					break;
+				case 'The Lowrider':
+					bicycle = new GeneralProductsLowrider();
+					break;
+				case 'The Flatlander':
+					bicycle = new GeneralProductsFlatlander();
+					break;
+				case 'The Comfort Cruiser':
+				default:
+					bicycle = new GeneralProductsComfortCruiser();
+			}
+			Interface.ensureImplements(bicycle, Bicycle);
+			return bicycle;	
+		}
+
+		/*** XHR工厂 ***/
+		
+		/* AjaxHandler interface */
+		var AjaxHandler = new Interface('AjaxHandler', ['request','createXhrObject']);
+
+		/* SimpleHandler class. */
+		var SimpleHandler = function(){}; //implements AjaxHandler
+		SimpleHandler.prototype = {
+			request: function(method, url, callback, postVars){
+				var xhr = this.createXhrObject();
+				xhr.onreadystatechange = function(){
+					if(xhr.readyState !== 4) return;
+					(xhr.status === 200) ? 
+						callback.success(xhr.responseText, xhr.responseXML) :
+						callback.failure(xhr.status);
+				};
+				xhr.open(method, url, true);
+				if(method !== 'POST') postVars = null;
+				xhr.send(postVars);
+			},
+			createXhrObject: function(){ //Factory method.
+				var methods = [
+					function(){ return new XMLHttpRequest(); },
+					function(){ return new ActiveXObject('Msxml2.XMLHTTP'); },
+					function(){ return new ActiveXObject('Microsoft.XMLHTTP'); }
+				];
+				for(var i = 0, len = methods.length; i < len; i++){
+					try{
+						methods[i]();
+					}catch(e){
+						continue;
+					}
+					//If we reach this point,methods[i] worked.
+					this.createXhrObject = methods[i]; //Memoize the method.
+					return methods[i];
+				}
+				//If we reach this point, none of the methods worked.
+				throw new Error('SimpleHandler: Could not create an XHR object.');
+			}
+		}
+
+		/* QueueHandler class. */
+		var QueueHandler = function(){ //implements AjaxHandler
+			this.queue = [];
+			this.requestInProgress = false;
+			this.retryDelay = 5; //In seconds;
+		};
+		extend(QueueHandler, SimpleHandler);
+		QueueHandler.prototype.request = function(method, url, callback, postVars, override){
+			if(this.requestInProgress && !override){
+				this.queue.push({
+					method: method,
+					url: url,
+					callback: callback,
+					postVars: postVars
+				});
+			}else{
+				this.requestInProgress = true;
+				var xhr = this.createXhrObject();
+				var that = this;
+				xhr.onreadystatechange = function(){
+					if(xhr.readyState !== 4) return;
+					if(xhr.status === 200){
+						callback.success(xhr.responseText, xhr.responseXML);
+						that.advanceQueue();
+					}else{
+						callback.failure(xhr.status);
+						setTimeout(function(){
+							that.request(method, url, callback, postVars, true);
+						}, that.retryDelay * 1000);
+					}
+				};
+				xhr.open(method, url, true);
+				if(method !== 'POST') postVars = null;
+				xhr.send(postVars);
+			}
+		}
+
+		QueueHandler.prototype.advanceQueue = function(){
+			if(this.queue.length === 0){
+				this.requestInProgress = false;
+				return;
+			}
+			var req = this.queue.shift();
+			this.request(req.method, req.url, req.callback, req.postVars, true);
+		}
+
+		/* OfflineHandler class. */
+		var OfflineHandler = function(){ //implements AjaxHandler
+			this.storedRequests = [];
+		};
+		extend(OfflineHandler, SimpleHandler);
+		OfflineHandler.prototype.request = function(method, url, callback, postVars){
+			if(XhrManager.isOffline()){ //Store the request until we are online.
+				this.storedRequests.push({
+					method: method,
+					url: url,
+					callback: callback,
+					postVars: postVars
+				});
+			}else{ //Call SimpleHandler's request method if we are online.
+				this.flushStoreRequests();
+				OfflineHandler.superClass.request(method, url, callback, postVars);
+			}
+		};
+		OfflineHandler.prototype.flushStoreRequests = function(){
+			for(var i = 0, len = storedRequests.length; i < len; i++){
+				var req = storedRequests[i];
+				OfflineHandler.superClass.request(req.request, req.url, req.callback, req.postVars);
+			}
+		};
 	</script>	
 
 	<script type="text/javascript">
