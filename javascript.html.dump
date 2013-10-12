@@ -77,7 +77,7 @@
 		}
 
 		/**
-		 * µ÷ÓÃÁ´µÄ½á¹¹
+		 * è°ƒç”¨é“¾çš„ç»“æ„
 		 */
 		
 		(function(){
@@ -152,9 +152,9 @@
 			});
 		});
 
-/*************************************************Éè¼ÆÄ£Ê½************************************************/
+/*************************************************è®¾è®¡æ¨¡å¼************************************************/
 		
-	/******** 1.¹¤³§Ä£Ê½ *********/
+	/******** 1.å·¥å‚æ¨¡å¼ *********/
 
 		/* BicycleShop class. */
 		/*var BicycleShop = function(){};
@@ -295,7 +295,7 @@
 			return bicycle;	
 		}
 
-		/*** XHR¹¤³§ ***/
+		/*** XHRå·¥å‚ ***/
 		
 		/* AjaxHandler interface */
 		var AjaxHandler = new Interface('AjaxHandler', ['request','createXhrObject']);
@@ -431,7 +431,7 @@
 		}
 
 
-		/*** RSSÔÄ¶ÁÆ÷ ***/
+		/*** RSSé˜…è¯»å™¨ ***/
 
 		/* DisplayModule interface. */
 		var DisplayModule = new Interface('DisplayModule', ['append', 'remove', 'clear']);
@@ -520,9 +520,9 @@
 		};
 
 
-	/******** 2.ÇÅ½ÓÄ£Ê½ *********/	
+	/******** 2.æ¡¥æ¥æ¨¡å¼ *********/	
 
-		/*** ¹¹½¨XHRÁ¬½Ó¶ÓÁĞ ***/
+		/*** æ„å»ºXHRè¿æ¥é˜Ÿåˆ— ***/
 		var asyncRequest = (function(){
 			function handleReadyState(o, callback){
 				var poll = window.setInterval(
